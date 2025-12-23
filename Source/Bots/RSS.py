@@ -3,6 +3,7 @@ import os
 import requests
 import time
 from enum import Enum
+from typing import cast
 
 import signal
 import sys
@@ -82,6 +83,9 @@ rss_log_file_path = os.path.join(
 rss_log = ConfigParser()
 rss_log.read(rss_log_file_path)
 
+if not rss_log.has_section("main"):
+    rss_log.add_section("main")
+
 
 def get_ransomware_news(source):
     logger.debug("Querying latest ransomware information")
@@ -104,11 +108,11 @@ def get_news_from_rss(rss_item):
         rss_object["source"] = rss_item[1]
         try:
             rss_object["publish_date"] = time.strftime(
-                "%Y-%m-%dT%H:%M:%S", rss_object.published_parsed
+                "%Y-%m-%dT%H:%M:%S", cast(time.struct_time, rss_object.published_parsed)
             )
         except:
             rss_object["publish_date"] = time.strftime(
-                "%Y-%m-%dT%H:%M:%S", rss_object.updated_parsed
+                "%Y-%m-%dT%H:%M:%S", cast(time.struct_time, rss_object.updated_parsed)
             )
 
     return feed_entries

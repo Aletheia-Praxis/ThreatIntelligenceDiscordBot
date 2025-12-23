@@ -1,8 +1,10 @@
 import os
 import time
+import asyncio
+from typing import Any, Dict
 from discord import File
 
-from telethon.sync import events, TelegramClient
+from telethon import events, TelegramClient
 from telethon.errors.rpcerrorlist import UsernameInvalidError
 from telethon.tl.functions.channels import JoinChannelRequest
 
@@ -19,7 +21,7 @@ image_download_path = os.path.join(
     ),
 )
 
-telegram_feed_list = {
+telegram_feed_list_urls = {
     'ArvinGroup': 'https://t.me/arvin_club',
     'VxUnderground': 'https://t.me/vxunderground',
     'Malpedia': 'https://t.me/malpedia',
@@ -55,35 +57,50 @@ telegram_feed_list = {
     'HeawsNet': 'https://t.me/heawsnet'
 }
 
-for name, url in telegram_feed_list.items():
+telegram_feed_list: Dict[str, Dict[str, Any]] = {}
+for name, url in telegram_feed_list_urls.items():
     telegram_feed_list[name] = {"url" : url, "channel" : None}
 
+
+def send_file_sync(path):
+    with open(path, "rb") as upload_file:
+        webhooks["TelegramFeed"].send(file=File(upload_file))
+
+def send_embed_sync(embed):
+    webhooks["TelegramFeed"].send(embed=embed)
 
 async def event_handler(event):
     if event.photo:
         logger.debug("Downloading image...")
 
         image_data = await event.download_media(os.path.join(image_download_path, str(event.photo.id)))
-        with open(image_data, "rb") as upload_file:
-            webhooks["TelegramFeed"].send(file=File(upload_file))
+        await asyncio.get_running_loop().run_in_executor(None, send_file_sync, image_data)
 
-    create_telegram_output(event.chat, event.message)
+    await create_telegram_output(event.chat, event.message)
 
 
-def create_telegram_output(chat, message):
-    message = format_single_article({"title" : message.message, "source" : f"{chat.title} | Telegram", "publish_date" : message.date})
-    webhooks["TelegramFeed"].send(embed=message)
+async def create_telegram_output(chat, message):
+    embed = format_single_article({"title" : message.message, "source" : f"{chat.title} | Telegram", "publish_date" : message.date})
+    await asyncio.get_running_loop().run_in_executor(None, send_embed_sync, embed)
 
 
 # Instatiate object per feed item
-def init_client(client):
+async def init_client(client):
     for feed in telegram_feed_list.keys():
         try:  # TODO consider only sending join requests if not already joined
-            logger.debug(f'Joining "{feed}" channel at {telegram_feed_list[feed]["url"]}')
-            telegram_feed_list[feed]["channel"] = client.get_entity(telegram_feed_list[feed]["url"])
-            client(JoinChannelRequest(telegram_feed_list[feed]["channel"]))
+            url = telegram_feed_list[feed]["url"]
+            logger.debug(f'Joining "{feed}" channel at {url}')
+            
+            # Get input entity for joining
+            input_entity = await client.get_input_entity(url)
+            await client(JoinChannelRequest(input_entity))
+            
+            # Store channel entity if needed (though not currently used)
+            telegram_feed_list[feed]["channel"] = await client.get_entity(url)
+            
         except (
             UsernameInvalidError,
+            ValueError
         ) as e:  # telegram user or channel was not found
             logger.warning(f'Problem when attempting to join "{feed}" channel at {telegram_feed_list[feed]["url"]}', exc_info=e)
             continue
@@ -92,16 +109,18 @@ def init_client(client):
     client.add_event_handler(event_handler, events.NewMessage(incoming=True))
 
 
-def main():
-    with TelegramClient(
+async def main_async():
+    async with TelegramClient(
         config["Telegram"]["BotName"],
-        config["Telegram"]["APIID"],
+        int(config["Telegram"]["APIID"]),
         config["Telegram"]["APIHash"],
     ) as client:
         logger.info("Initiating telegram client")
-        init_client(client)
-        client.run_until_disconnected()
+        await init_client(client)
+        await client.run_until_disconnected()
 
+def main():
+    asyncio.run(main_async())
 
 if __name__ == "__main__":
     main()

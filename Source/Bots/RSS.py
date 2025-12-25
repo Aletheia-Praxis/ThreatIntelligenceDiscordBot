@@ -76,7 +76,7 @@ source_details = {
 rss_log_file_path = os.path.join(
     os.getcwd(),
     "Source",
-    config.get("RSS", "RSSLogFile", raw=True, vars={"fallback": "RSSLog.txt"}),
+    config["RSS"].get("RSSLogFile", "RSSLog.txt"),
 )
 
 

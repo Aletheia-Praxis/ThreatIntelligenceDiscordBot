@@ -1,4 +1,5 @@
 from discord import Embed
+from typing import List, Dict, Any, Union
 
 from datetime import datetime
 import dateutil.parser
@@ -8,21 +9,25 @@ MAIN_COLOR = 0x000000
 THUMBNAIL_URL = "https://avatars.githubusercontent.com/u/87911852?s=280&v=4"
 
 
-def cut_string(string, length):
+def cut_string(string: str, length: int) -> str:
     return (string[: (length - 3)].strip() + "...") if len(string) > length else string
 
 
-def format_datetime(article_datetime):
-    if not isinstance(article_datetime, datetime):
+def format_datetime(article_datetime: Union[datetime, str]) -> List[str]:
+    dt_object: datetime
+
+    if isinstance(article_datetime, datetime):
+        dt_object = article_datetime
+    else:
         try:
-            article_datetime = dateutil.parser.isoparse(article_datetime)
+            dt_object = dateutil.parser.isoparse(article_datetime)
         except ValueError:
             return article_datetime.split("T")
 
-    return [article_datetime.strftime("%d, %b %Y"), article_datetime.strftime("%H:%M")]
+    return [dt_object.strftime("%d, %b %Y"), dt_object.strftime("%H:%M")]
 
 
-def format_single_article(article):
+def format_single_article(article: Dict[str, Any]) -> Embed:
     description = ""
 
     if "summary" in article:

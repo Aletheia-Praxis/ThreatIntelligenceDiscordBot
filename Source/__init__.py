@@ -39,7 +39,7 @@ config: Dict[str, Dict[str, Any]] = {
 }
 
 for section in ["Webhooks", "Telegram"]:
-    if not section in config:
+    if section not in config:
         sys.exit(f'Please specify a "{section}" section in the config file')
 
 if verify_config_section(config, "Webhooks"):

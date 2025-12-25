@@ -2,11 +2,12 @@ import os
 import time
 import asyncio
 from typing import Any, Dict
-from discord import File
+from discord import File, Embed
 
 from telethon import events, TelegramClient
 from telethon.errors.rpcerrorlist import UsernameInvalidError
 from telethon.tl.functions.channels import JoinChannelRequest
+from telethon.tl.types import InputPeerChannel, InputChannel
 
 import logging
 logger = logging.getLogger("telegram")
@@ -16,7 +17,7 @@ from ..Formatting import format_single_article
 
 image_download_path = os.path.join(
     os.getcwd(),
-    config["Telegram"].get("ImageDownloadFolder", "TelegramImages"),
+    str(config["Telegram"].get("ImageDownloadFolder", "TelegramImages")),
 )
 
 telegram_feed_list_urls = {
@@ -60,14 +61,14 @@ for name, url in telegram_feed_list_urls.items():
     telegram_feed_list[name] = {"url" : url, "channel" : None}
 
 
-def send_file_sync(path):
+def send_file_sync(path: str) -> None:
     with open(path, "rb") as upload_file:
         webhooks["TelegramFeed"].send(file=File(upload_file))
 
-def send_embed_sync(embed):
+def send_embed_sync(embed: Embed) -> None:
     webhooks["TelegramFeed"].send(embed=embed)
 
-async def event_handler(event):
+async def event_handler(event: Any) -> None:
     if event.photo:
         logger.debug("Downloading image...")
 
@@ -77,13 +78,13 @@ async def event_handler(event):
     await create_telegram_output(event.chat, event.message)
 
 
-async def create_telegram_output(chat, message):
+async def create_telegram_output(chat: Any, message: Any) -> None:
     embed = format_single_article({"title" : message.message, "source" : f"{chat.title} | Telegram", "publish_date" : message.date})
     await asyncio.get_running_loop().run_in_executor(None, send_embed_sync, embed)
 
 
 # Instatiate object per feed item
-async def init_client(client):
+async def init_client(client: TelegramClient) -> None:
     for feed in telegram_feed_list.keys():
         try:  # TODO consider only sending join requests if not already joined
             url = telegram_feed_list[feed]["url"]
@@ -91,7 +92,9 @@ async def init_client(client):
             
             # Get input entity for joining
             input_entity = await client.get_input_entity(url)
-            await client(JoinChannelRequest(input_entity))
+            if isinstance(input_entity, InputPeerChannel):
+                input_channel = InputChannel(input_entity.channel_id, input_entity.access_hash)
+                await client(JoinChannelRequest(input_channel))
             
             # Store channel entity if needed (though not currently used)
             telegram_feed_list[feed]["channel"] = await client.get_entity(url)
@@ -107,7 +110,7 @@ async def init_client(client):
     client.add_event_handler(event_handler, events.NewMessage(incoming=True))
 
 
-async def main_async():
+async def main_async() -> None:
     async with TelegramClient(
         config["Telegram"]["BotName"],
         int(config["Telegram"]["APIID"]),
@@ -117,7 +120,7 @@ async def main_async():
         await init_client(client)
         await client.run_until_disconnected()
 
-def main():
+def main() -> None:
     asyncio.run(main_async())
 
 if __name__ == "__main__":

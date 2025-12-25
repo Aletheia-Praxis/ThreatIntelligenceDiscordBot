@@ -9,7 +9,7 @@ def verify_config(section_name):
 
     if len(missing_params) > 0:
         sys.exit(
-            f"You havent't specified {', '.join(missing_params)} in the config.ini file"
+            f"You havent't specified {', '.join(missing_params)} in the .env file"
         )
 
 

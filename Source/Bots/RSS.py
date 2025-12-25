@@ -3,7 +3,7 @@ import os
 import requests
 import time
 from enum import Enum
-from typing import cast
+from typing import cast, List, Dict, Any, Union, Callable, Tuple
 
 import signal
 import sys
@@ -12,13 +12,13 @@ import atexit
 import logging
 logger = logging.getLogger("rss")
 
-import feedparser
+import feedparser # type: ignore
 from configparser import ConfigParser, NoOptionError
 
 from .. import webhooks, config
 from ..Formatting import format_single_article
 
-private_rss_feed_list = [
+private_rss_feed_list: List[List[str]] = [
     ['https://grahamcluley.com/feed/', 'Graham Cluley'],
     ['https://threatpost.com/feed/', 'Threatpost'],
     ['https://krebsonsecurity.com/feed/', 'Krebs on Security'],
@@ -47,7 +47,7 @@ private_rss_feed_list = [
     ['https://cybersecurity.att.com/site/blog-all-rss', 'ATT']
 ]
 
-gov_rss_feed_list = [
+gov_rss_feed_list: List[List[str]] = [
     ["https://www.cisa.gov/uscert/ncas/alerts.xml", "US-CERT CISA"],
     ["https://www.ncsc.gov.uk/api/1/services/v1/report-rss-feed.xml", "NCSC"],
     ["https://www.cisecurity.org/feed/advisories", "Center of Internet Security"],
@@ -55,7 +55,7 @@ gov_rss_feed_list = [
 
 FeedTypes = Enum("FeedTypes", "RSS JSON")
 
-source_details = {
+source_details: Dict[str, Dict[str, Any]] = {
     "Private RSS Feed": {
         "source": private_rss_feed_list,
         "hook": webhooks["PrivateSectorFeed"],
@@ -76,7 +76,7 @@ source_details = {
 rss_log_file_path = os.path.join(
     os.getcwd(),
     "Source",
-    config["RSS"].get("RSSLogFile", "RSSLog.txt"),
+    str(config["RSS"].get("RSSLogFile", "RSSLog.txt")),
 )
 
 
@@ -87,7 +87,7 @@ if not rss_log.has_section("main"):
     rss_log.add_section("main")
 
 
-def get_ransomware_news(source):
+def get_ransomware_news(source: str) -> List[Dict[str, Any]]:
     logger.debug("Querying latest ransomware information")
     posts = requests.get(source).json()
 
@@ -96,10 +96,10 @@ def get_ransomware_news(source):
         post["title"] = "Post: " + post["post_title"]
         post["source"] = post["group_name"]
 
-    return posts
+    return cast(List[Dict[str, Any]], posts)
 
 
-def get_news_from_rss(rss_item):
+def get_news_from_rss(rss_item: List[str]) -> List[Any]:
     logger.debug(f"Querying RSS feed at {rss_item[0]}")
     feed_entries = feedparser.parse(rss_item[0]).entries
 
@@ -115,10 +115,10 @@ def get_news_from_rss(rss_item):
                 "%Y-%m-%dT%H:%M:%S", cast(time.struct_time, rss_object.updated_parsed)
             )
 
-    return feed_entries
+    return cast(List[Any], feed_entries)
 
 
-def proccess_articles(articles):
+def proccess_articles(articles: List[Any]) -> Tuple[List[Any], List[Any]]:
     messages, new_articles = [], []
     articles.sort(key=lambda article: article["publish_date"])
 
@@ -141,7 +141,7 @@ def proccess_articles(articles):
     return messages, new_articles
 
 
-def send_messages(hook, messages, articles, batch_size=10):
+def send_messages(hook: Any, messages: List[Any], articles: List[Any], batch_size: int = 10) -> None:
     logger.debug(f"Sending {len(messages)} messages in batches of {batch_size}")
     for i in range(0, len(messages), batch_size):
         hook.send(embeds=messages[i : i + batch_size])
@@ -152,14 +152,14 @@ def send_messages(hook, messages, articles, batch_size=10):
         time.sleep(3)
 
 
-def process_source(post_gathering_func, source, hook):
+def process_source(post_gathering_func: Callable[[Any], List[Any]], source: Any, hook: Any) -> None:
     raw_articles = post_gathering_func(source)
 
     processed_articles, new_raw_articles = proccess_articles(raw_articles)
     send_messages(hook, processed_articles, new_raw_articles)
 
 
-def handle_rss_feed_list(rss_feed_list, hook):
+def handle_rss_feed_list(rss_feed_list: List[List[str]], hook: Any) -> None:
     for rss_feed in rss_feed_list:
         logger.info(f"Handling RSS feed for {rss_feed[1]}")
         webhooks["StatusMessages"].send(f"> {rss_feed[1]}")
@@ -167,12 +167,12 @@ def handle_rss_feed_list(rss_feed_list, hook):
         process_source(get_news_from_rss, rss_feed, hook)
 
 
-def write_status_message(message):
+def write_status_message(message: str) -> None:
     webhooks["StatusMessages"].send(f"**{time.ctime()}**: *{message}*")
     logger.info(message)
 
 
-def clean_up_and_close():
+def clean_up_and_close() -> None:
     logger.critical("Writing last things to rss log file and closing up")
     with open(rss_log_file_path, "w") as f:
         rss_log.write(f)
@@ -180,7 +180,7 @@ def clean_up_and_close():
     sys.exit(0)
 
 
-def main():
+def main() -> None:
     logger.debug("Registering clean-up handlers")
     atexit.register(clean_up_and_close)
     signal.signal(signal.SIGTERM, lambda num, frame: clean_up_and_close())

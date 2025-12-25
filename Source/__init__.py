@@ -16,8 +16,10 @@ try:
 except OSError:
     pass # Most likely simply means the folder already exists
 
+from typing import Dict, Any
+
 # Configuration dictionary to replace ConfigParser
-config = {
+config: Dict[str, Dict[str, Any]] = {
     "Webhooks": {
         "PrivateSectorFeed": os.getenv("WEBHOOK_PRIVATE_SECTOR_FEED"),
         "GovermentFeed": os.getenv("WEBHOOK_GOVERNMENT_FEED"),

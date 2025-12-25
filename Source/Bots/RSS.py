@@ -1,22 +1,20 @@
-import json
 import os
 import requests
 import time
 from enum import Enum
-from typing import cast, List, Dict, Any, Union, Callable, Tuple
-
+from typing import cast, List, Dict, Any, Callable, Tuple
 import signal
 import sys
 import atexit
-
 import logging
-logger = logging.getLogger("rss")
 
-import feedparser # type: ignore
+import feedparser  # type: ignore
 from configparser import ConfigParser, NoOptionError
 
 from .. import webhooks, config
 from ..Formatting import format_single_article
+
+logger = logging.getLogger("rss")
 
 private_rss_feed_list: List[List[str]] = [
     ['https://grahamcluley.com/feed/', 'Graham Cluley'],
@@ -110,7 +108,7 @@ def get_news_from_rss(rss_item: List[str]) -> List[Any]:
             rss_object["publish_date"] = time.strftime(
                 "%Y-%m-%dT%H:%M:%S", cast(time.struct_time, rss_object.published_parsed)
             )
-        except:
+        except (AttributeError, TypeError):
             rss_object["publish_date"] = time.strftime(
                 "%Y-%m-%dT%H:%M:%S", cast(time.struct_time, rss_object.updated_parsed)
             )

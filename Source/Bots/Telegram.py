@@ -1,19 +1,18 @@
 import os
-import time
 import asyncio
 from typing import Any, Dict
-from discord import File, Embed
+import logging
 
+from discord import File, Embed
 from telethon import events, TelegramClient
 from telethon.errors.rpcerrorlist import UsernameInvalidError
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.types import InputPeerChannel, InputChannel
 
-import logging
-logger = logging.getLogger("telegram")
-
 from .. import webhooks, config
 from ..Formatting import format_single_article
+
+logger = logging.getLogger("telegram")
 
 image_download_path = os.path.join(
     os.getcwd(),

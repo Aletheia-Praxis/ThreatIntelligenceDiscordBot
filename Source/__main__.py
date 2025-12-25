@@ -4,7 +4,7 @@ from . import config
 from .Utils import get_missing_config_params, configure_logger
 
 
-def verify_config(section_name):
+def verify_config(section_name: str) -> None:
     missing_params = get_missing_config_params(config, section_name)
 
     if len(missing_params) > 0:
@@ -22,7 +22,7 @@ if __name__ == "__main__":
                 from .Bots import RSS as bot
             case "telegram":
                 verify_config("Telegram")
-                from .Bots import Telegram as bot
+                from .Bots import Telegram as bot  # type: ignore[no-redef]
             case _:
                 sys.exit(
                     "Argument not recognized. The possible options are rss and telegram"

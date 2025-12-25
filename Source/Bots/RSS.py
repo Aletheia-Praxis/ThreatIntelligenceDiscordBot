@@ -89,7 +89,7 @@ if not rss_log.has_section("main"):
 
 def get_ransomware_news(source: str) -> List[Dict[str, Any]]:
     logger.debug("Querying latest ransomware information")
-    posts = requests.get(source).json()
+    posts = requests.get(source, timeout=30).json()
 
     for post in posts:
         post["publish_date"] = post["discovered"]

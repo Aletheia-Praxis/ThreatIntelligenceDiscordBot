@@ -1,22 +1,20 @@
 import sys
 import os
+from typing import Dict, Any
+
 from dotenv import load_dotenv
 from discord import SyncWebhook
 
 from .Utils import verify_config_section
-
-from os import mkdir
 
 # Load environment variables
 load_dotenv()
 
 # Need to create folder before running script, as the logger will otherwise throw error
 try:
-    mkdir("logs")
+    os.mkdir("logs")
 except OSError:
-    pass # Most likely simply means the folder already exists
-
-from typing import Dict, Any
+    pass  # Most likely simply means the folder already exists
 
 # Configuration dictionary to replace ConfigParser
 config: Dict[str, Dict[str, Any]] = {

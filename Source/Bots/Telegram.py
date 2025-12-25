@@ -16,9 +16,7 @@ from ..Formatting import format_single_article
 
 image_download_path = os.path.join(
     os.getcwd(),
-    config.get(
-        "Telegram", "ImageDownloadFolder", raw=True, vars={"fallback": "TelegramImages"}
-    ),
+    config["Telegram"].get("ImageDownloadFolder", "TelegramImages"),
 )
 
 telegram_feed_list_urls = {

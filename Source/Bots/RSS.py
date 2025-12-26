@@ -1,6 +1,7 @@
 import os
 import requests
 import time
+import json
 from enum import Enum
 from typing import cast, List, Dict, Any, Callable, Tuple
 import signal
@@ -10,46 +11,19 @@ import logging
 
 import feedparser  # type: ignore
 from configparser import ConfigParser, NoOptionError
+from dotenv import load_dotenv
 
 from .. import webhooks, config
 from ..Formatting import format_single_article
 
 logger = logging.getLogger("rss")
 
-private_rss_feed_list: List[List[str]] = [
-    ['https://grahamcluley.com/feed/', 'Graham Cluley'],
-    ['https://threatpost.com/feed/', 'Threatpost'],
-    ['https://krebsonsecurity.com/feed/', 'Krebs on Security'],
-    ['https://www.darkreading.com/rss.xml', 'Dark Reading'],
-    ['http://feeds.feedburner.com/eset/blog', 'We Live Security'],
-    ['https://davinciforensics.co.za/cybersecurity/feed/', 'DaVinci Forensics'],
-    ['https://blogs.cisco.com/security/feed', 'Cisco'],
-    ['https://www.infosecurity-magazine.com/rss/news/', 'Information Security Magazine'],
-    ['http://feeds.feedburner.com/GoogleOnlineSecurityBlog', 'Google'],
-    ['http://feeds.trendmicro.com/TrendMicroResearch', 'Trend Micro'],
-    ['https://www.bleepingcomputer.com/feed/', 'Bleeping Computer'],
-    ['https://www.proofpoint.com/us/rss.xml', 'Proof Point'],
-    ['http://feeds.feedburner.com/TheHackersNews?format=xml', 'Hacker News'],
-    ['https://www.schneier.com/feed/atom/', 'Schneier on Security'],
-    ['https://www.binarydefense.com/feed/', 'Binary Defense'],
-    ['https://securelist.com/feed/', 'Securelist'],
-    ['https://research.checkpoint.com/feed/', 'Checkpoint Research'],
-    ['https://www.virusbulletin.com/rss', 'VirusBulletin'],
-    ['https://modexp.wordpress.com/feed/', 'Modexp'],
-    ['https://www.tiraniddo.dev/feeds/posts/default', 'James Forshaw'],
-    ['https://blog.xpnsec.com/rss.xml', 'Adam Chester'],
-    ['https://msrc-blog.microsoft.com/feed/', 'Microsoft Security'],
-    ['https://www.recordedfuture.com/feed', 'Recorded Future'],
-    ['https://www.sentinelone.com/feed/', 'SentinelOne'],
-    ['https://redcanary.com/feed/', 'RedCanary'],
-    ['https://cybersecurity.att.com/site/blog-all-rss', 'ATT']
-]
+# Load environment variables
+load_dotenv(os.path.join(os.getcwd(), 'OriginFeeds', '.env.rss_feeds'))
 
-gov_rss_feed_list: List[List[str]] = [
-    ["https://www.cisa.gov/uscert/ncas/alerts.xml", "US-CERT CISA"],
-    ["https://www.ncsc.gov.uk/api/1/services/v1/report-rss-feed.xml", "NCSC"],
-    ["https://www.cisecurity.org/feed/advisories", "Center of Internet Security"],
-]
+private_rss_feed_list: List[List[str]] = json.loads(os.getenv("PRIVATE_RSS_FEED_LIST", "[]"))
+
+gov_rss_feed_list: List[List[str]] = json.loads(os.getenv("GOV_RSS_FEED_LIST", "[]"))
 
 FeedTypes = Enum("FeedTypes", "RSS JSON")
 

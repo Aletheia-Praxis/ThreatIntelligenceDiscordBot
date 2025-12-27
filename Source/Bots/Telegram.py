@@ -56,18 +56,28 @@ async def create_telegram_output(chat: Any, message: Any) -> None:
 # Instatiate object per feed item
 async def init_client(client: TelegramClient) -> None:
     for feed in telegram_feed_list.keys():
-        try:  # TODO consider only sending join requests if not already joined
+        try:
             url = telegram_feed_list[feed]["url"]
-            logger.debug(f'Joining "{feed}" channel at {url}')
+            logger.debug(f'Checking "{feed}" channel at {url}')
             
-            # Get input entity for joining
-            input_entity = await client.get_input_entity(url)
-            if isinstance(input_entity, InputPeerChannel):
-                input_channel = InputChannel(input_entity.channel_id, input_entity.access_hash)
-                await client(JoinChannelRequest(input_channel))
+            # Get entity to check if we are already joined
+            entity = await client.get_entity(url)
+            
+            # Check if we are already a participant
+            # 'left' is True if we left or are not a participant
+            # 'left' is False if we are a participant
+            if getattr(entity, 'left', True):
+                logger.debug(f'Joining "{feed}" channel at {url}')
+                # Get input entity for joining
+                input_entity = await client.get_input_entity(url)
+                if isinstance(input_entity, InputPeerChannel):
+                    input_channel = InputChannel(input_entity.channel_id, input_entity.access_hash)
+                    await client(JoinChannelRequest(input_channel))
+            else:
+                logger.debug(f'Already joined "{feed}" channel at {url}')
             
             # Store channel entity if needed (though not currently used)
-            telegram_feed_list[feed]["channel"] = await client.get_entity(url)
+            telegram_feed_list[feed]["channel"] = entity
             
         except (
             UsernameInvalidError,

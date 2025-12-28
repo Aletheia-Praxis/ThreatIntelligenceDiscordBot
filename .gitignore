@@ -245,3 +245,5 @@ bin/
 logs/
 
 *session
+
+TelegramImages/*
